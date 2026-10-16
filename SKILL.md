@@ -104,6 +104,30 @@ Automated pipeline planner:
 py scripts/route_pipeline.py "<compound user request>"
 ```
 
+### Step 7: Dynamic Angle Shifts & Multi-Turn Adaptation (Pivot Handling)
+Real-world conversations are non-linear. The user may shift angles, speak informally, or pivot mid-stream:
+
+1. **Mid-Conversation Angle Shift / Topic Pivot**:
+   - If the user was building UI and suddenly pivots (*"Wait, deploy this to AWS first"* or *"Now test for SQL injection"*):
+   - **Hot-Swap Skills**: Unload the previous skill and activate the new domain skill.
+   - **Display Switch Badge**:
+     ```markdown
+     > 🧭 **[Skill Router]** ➔ Switched Skill: `aws-serverless` *(Context Pivot: Deployment Requested)*
+     ```
+2. **Informal & Symptom-Based Angles (No Direct Keywords)**:
+   - When the user uses casual slang or symptoms (*"Sab kuch phat gaya"*, *"UI gandi lag rahi hai"*, *"Website super slow hai"*):
+   - **Symptom Mapping**:
+     - *"Crash / broken / toot gaya"* ➔ `systematic-debugging` or `debugger`
+     - *"Slow / lag / freeze"* ➔ `performance-engineer` or `web-performance-optimization`
+     - *"Ugly / gandi UI / design improve"* ➔ `frontend-design` or `high-end-visual-design`
+     - *"Hack proof / leak"* ➔ `security-auditor` or `api-security-best-practices`
+3. **Multi-Angle Disambiguation (Ambiguous Requests)**:
+   - If the user's angle has multiple valid paths (*"Auth setup karna hai"* ➔ NextAuth vs Supabase vs Clerk):
+   - Do NOT guess blindly. Politely present the top 2-3 matching skill angles and let the user pick.
+4. **User Correction / Explicit Override**:
+   - If the user explicitly redirects (*"Nahi, mujhe Docker nahi, Kubernetes chahiye"*):
+   - Immediately yield to the user's preference with zero resistance and activate the requested skill.
+
 ---
 
 ## Decision Flowchart
