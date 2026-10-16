@@ -62,21 +62,34 @@ Score each skill against the user's intent using these criteria:
 | Domain/technology match       | Medium | Does the skill cover the same tech stack?                 |
 | Action type match             | Low    | Does the skill handle the same category of action?        |
 
-### Step 4: Activate the Selected Skill
+### Step 4: Activate & Announce the Selected Skill (Visible in Chat)
+
 Once a skill is selected:
-1. **Read** the full `SKILL.md` file using `view_file`.
-2. **Follow** the instructions inside it as if they were your own system prompt for this task.
-3. If the skill references files in `references/`, `scripts/`, or `examples/`, read those on-demand as needed.
-4. **Do NOT** tell the user "I'm now reading skill X" unless they explicitly ask. Just seamlessly do the work.
+1. **Chat Transparency Indicator (MANDATORY)**: You MUST ALWAYS display a clear visual badge/callout at the very beginning of your response so the user clearly sees which skill is driving the answer:
+   ```markdown
+   > 🧭 **[Skill Router]** ➔ Activated Skill: `skill-name` *(Domain: <domain> | Intent: <matched intent>)*
+   ```
+2. **For Multi-Skill Pipelines**:
+   ```markdown
+   > 🧭 **[Skill Router]** ➔ Pipeline Chain: `skill-1` ➔ `skill-2` ➔ `skill-3` *(5-Stage DAG)*
+   ```
+3. **For Gap Detection**:
+   ```markdown
+   > 🧭 **[Skill Router]** ➔ Gap Detected: No installed skill found for `<topic>`. Offering to scaffold or proceed.
+   ```
+4. **Read** the full `SKILL.md` file using `view_file`.
+5. **Follow** the instructions inside it as if they were your own system prompt for this task.
+6. If the skill references files in `references/`, `scripts/`, or `examples/`, read those on-demand as needed.
 
 ### Step 5: Gap Detection — No Matching Skill Found
 If no installed skill matches the user's intent:
-1. **Inform the user clearly** and offer to scaffold/install a matching skill.
-2. **Automated Scaffolding**: Use [`scaffold_skill.py`](./scripts/scaffold_skill.py) to generate a 100% compliant Antigravity skill:
+1. **Display Gap Notice**: Show `> 🧭 **[Skill Router]** ➔ Gap Detected: ...`
+2. **Inform the user clearly** and offer to scaffold/install a matching skill.
+3. **Automated Scaffolding**: Use [`scaffold_skill.py`](./scripts/scaffold_skill.py) to generate a 100% compliant Antigravity skill:
    ```bash
    py scripts/scaffold_skill.py -n "<skill-name>" -d "<description>" -s "workspace|global"
    ```
-3. If user declines, proceed with best-effort using general knowledge.
+4. If user declines, proceed with best-effort using general knowledge.
 
 ### Step 6: Multi-Skill Chaining & DAG Pipeline (Advanced)
 Some tasks require multiple skills. Decompose the task into an ordered DAG:
@@ -128,9 +141,10 @@ User sends a message
 1. **Never skip skill discovery.** Always check if a relevant skill exists before falling back to general knowledge.
 2. **Respect progressive disclosure.** Only read frontmatter during discovery. Read the full file only after selection.
 3. **Be transparent about gaps.** If no skill exists, say so honestly. Don't pretend to follow a skill that doesn't exist.
-4. **Don't overload the user.** If the match is clear (>90% confidence), just activate and go. Don't list 10 possible skills.
-5. **Workspace skills override global skills.** If both have a skill with the same name, prefer the workspace version.
-6. **Chain wisely.** Only chain multiple skills if the task genuinely spans domains. Don't chain for simple requests.
+4. **Always display the [Skill Router] indicator in chat.** The user MUST see which skill is being activated at the very top of the response (e.g., `> 🧭 **[Skill Router]** ➔ Activated Skill: ...`).
+5. **Don't overload the user.** If the match is clear (>90% confidence), just activate, show the badge, and go. Don't list 10 possible skills.
+6. **Workspace skills override global skills.** If both have a skill with the same name, prefer the workspace version.
+7. **Chain wisely.** Only chain multiple skills if the task genuinely spans domains. Don't chain for simple requests.
 
 ---
 
@@ -138,19 +152,19 @@ User sends a message
 
 ### Scenario A: Clear Single Match
 **User:** "Mera Docker container crash ho raha hai, debug karo"
-**Router Action:** Match → `docker-expert` skill → Read SKILL.md → Follow debugging instructions.
+**Router Action:** Match → Output `> 🧭 **[Skill Router]** ➔ Activated Skill: docker-expert (Container Debugging)` → Read SKILL.md → Follow instructions.
 
 ### Scenario B: Multiple Possible Matches
 **User:** "React app mein auth add karo"
-**Router Action:** Top matches → `react-patterns`, `auth-implementation-patterns`, `clerk-auth` → Ask user which auth approach → Activate selected skill(s).
+**Router Action:** Top matches → `react-patterns`, `auth-implementation-patterns`, `clerk-auth` → Ask user which auth approach → Output badge for selected skill → Proceed.
 
 ### Scenario C: No Match Found
 **User:** "Arduino board ke liye firmware likho"
-**Router Action:** No matching skill installed → Inform user → Offer to create a basic `arduino-firmware` skill → Proceed.
+**Router Action:** Output `> 🧭 **[Skill Router]** ➔ Gap Detected: No installed skill for Arduino firmware` → Offer to scaffold `arduino-firmware` skill → Proceed.
 
 ### Scenario D: Multi-Skill Task
 **User:** "Next.js app banao with Supabase auth, SEO optimize karo, aur Vercel pe deploy karo"
-**Router Action:** Chain → `nextjs-best-practices` → `nextjs-supabase-auth` → `seo-audit` → `vercel-deployment` → Execute in order.
+**Router Action:** Output `> 🧭 **[Skill Router]** ➔ Pipeline Activated: nextjs-best-practices ➔ nextjs-supabase-auth ➔ seo-audit ➔ vercel-deployment` → Execute in order.
 
 ---
 
