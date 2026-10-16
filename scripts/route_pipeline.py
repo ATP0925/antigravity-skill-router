@@ -45,6 +45,34 @@ STAGES = [
     }
 ]
 
+# Meta-Agent Workflow Stages (Autonomous Execution Loop)
+META_STAGES = [
+    {
+        "stage": 1,
+        "name": "Task Planning & Checklist",
+        "keywords": ["plan", "plane", "planning", "checklist", "breakdown", "roadmap", "strategy", "indirect", "patahi"],
+        "target_skills": ["concise-planning", "writing-plans", "plan-writing"]
+    },
+    {
+        "stage": 2,
+        "name": "Goal Loop & Autonomy Scope",
+        "keywords": ["goal", "gole", "autonomous", "loop", "target", "objective"],
+        "target_skills": ["goal-loop", "spec-driven-loop"]
+    },
+    {
+        "stage": 3,
+        "name": "Phased Execution & Implementation",
+        "keywords": ["execute", "execution", "implement", "build", "install", "publish", "run", "karo", "karna"],
+        "target_skills": ["executing-plans", "subagent-driven-development", "implement"]
+    },
+    {
+        "stage": 4,
+        "name": "Ground-Truth Verification & Review",
+        "keywords": ["verify", "verification", "check", "audit", "validate", "review", "test-pass", "done", "poora"],
+        "target_skills": ["verification-before-completion", "dos-verify-done-claims", "lint-and-validate"]
+    }
+]
+
 def decompose_prompt(query: str):
     start_time = time.time()
 
@@ -64,60 +92,94 @@ def decompose_prompt(query: str):
 
     matched_stages = []
 
-    for stage_info in STAGES:
-        stage_num = stage_info["stage"]
-        stage_name = stage_info["name"]
-        stage_kws = stage_info["keywords"]
+    # 1. Check Meta-Workflow Stages (Plan -> Goal -> Execute -> Verify)
+    is_meta = any(w in query_lower for w in ["plan", "plane", "goal", "gole", "execute", "verify", "indirect", "patahi"])
+    if is_meta:
+        for stage_info in META_STAGES:
+            stage_num = stage_info["stage"]
+            stage_name = stage_info["name"]
+            stage_kws = stage_info["keywords"]
+            targets = stage_info["target_skills"]
 
-        # Check if query matches this stage's domain
-        stage_hits = [kw for kw in stage_kws if re.search(r'\b' + re.escape(kw) + r'\b', query_lower)]
+            # Check if this meta stage is hit
+            if any(re.search(r'\b' + re.escape(kw) + r'\b', query_lower) for kw in stage_kws) or any(t in raw_tokens for t in stage_kws):
+                # Find matching target skill from loaded skills
+                found_skill = None
+                for t in targets:
+                    for s in skills:
+                        if s["name"].lower() == t:
+                            found_skill = s
+                            break
+                    if found_skill:
+                        break
 
-        # Stage category constraints
-        stage_categories = {
-            1: ["frontend", "backend", "docs_design", "general"],
-            2: ["backend", "database", "security"],
-            3: ["frontend", "docs_design"],
-            4: ["testing"],
-            5: ["devops", "git"]
-        }
-        allowed_cats = stage_categories.get(stage_num, [])
+                if found_skill:
+                    matched_stages.append({
+                        "stage": stage_num,
+                        "stage_name": stage_name,
+                        "triggered_by": [kw for kw in stage_kws if kw in query_lower],
+                        "skill": found_skill["name"],
+                        "category": found_skill["category"],
+                        "path": found_skill["path"],
+                        "description": found_skill["description"][:120] + "..."
+                    })
 
-        if stage_hits or any(token in stage_kws for token in raw_tokens):
-            # Find best skill for this specific stage
-            candidate_scores = {}
-            for kw in stage_hits:
-                if kw in inverted_index:
-                    for s_idx in inverted_index[kw]:
-                        if not allowed_cats or skills[s_idx]["category"] in allowed_cats:
-                            candidate_scores[s_idx] = candidate_scores.get(s_idx, 0) + 20
+    # 2. Check Standard Engineering Stages (Architecture -> DB -> UI -> Test -> DevOps)
+    if not matched_stages:
+        for stage_info in STAGES:
+            stage_num = stage_info["stage"]
+            stage_name = stage_info["name"]
+            stage_kws = stage_info["keywords"]
 
-            # Score matching query tokens
-            for token in raw_tokens:
-                if token in inverted_index:
-                    for s_idx in inverted_index[token]:
-                        if not allowed_cats or skills[s_idx]["category"] in allowed_cats:
-                            candidate_scores[s_idx] = candidate_scores.get(s_idx, 0) + 10
+            # Check if query matches this stage's domain
+            stage_hits = [kw for kw in stage_kws if re.search(r'\b' + re.escape(kw) + r'\b', query_lower)]
 
-            # Bonus for skill name matching stage keyword
-            for s_idx in list(candidate_scores.keys()):
-                s_name = skills[s_idx]["name"].lower()
+            # Stage category constraints
+            stage_categories = {
+                1: ["frontend", "backend", "docs_design", "general"],
+                2: ["backend", "database", "security"],
+                3: ["frontend", "docs_design"],
+                4: ["testing"],
+                5: ["devops", "git"]
+            }
+            allowed_cats = stage_categories.get(stage_num, [])
+
+            if stage_hits or any(token in stage_kws for token in raw_tokens):
+                # Find best skill for this specific stage
+                candidate_scores = {}
+                for kw in stage_hits:
+                    if kw in inverted_index:
+                        for s_idx in inverted_index[kw]:
+                            if not allowed_cats or skills[s_idx]["category"] in allowed_cats:
+                                candidate_scores[s_idx] = candidate_scores.get(s_idx, 0) + 20
+
+                # Score matching query tokens
                 for token in raw_tokens:
-                    if token in s_name.split("-"):
-                        candidate_scores[s_idx] += 30
+                    if token in inverted_index:
+                        for s_idx in inverted_index[token]:
+                            if not allowed_cats or skills[s_idx]["category"] in allowed_cats:
+                                candidate_scores[s_idx] = candidate_scores.get(s_idx, 0) + 10
 
-            # Find top skill
-            if candidate_scores:
-                best_idx = max(candidate_scores.keys(), key=lambda i: candidate_scores[i])
-                best_skill = skills[best_idx]
-                matched_stages.append({
-                    "stage": stage_num,
-                    "stage_name": stage_name,
-                    "triggered_by": stage_hits,
-                    "skill": best_skill["name"],
-                    "category": best_skill["category"],
-                    "path": best_skill["path"],
-                    "description": best_skill["description"][:120] + "..."
-                })
+                # Bonus for skill name matching stage keyword
+                for s_idx in list(candidate_scores.keys()):
+                    s_name = skills[s_idx]["name"].lower()
+                    for token in raw_tokens:
+                        if token in s_name.split("-"):
+                            candidate_scores[s_idx] += 30
+
+                # Find top skill
+                if candidate_scores:
+                    best_idx = max(candidate_scores.keys(), key=lambda i: candidate_scores[i])
+                    best_skill = skills[best_idx]
+                    matched_stages.append({
+                        "stage": stage_num,
+                        "stage_name": stage_name,
+                        "triggered_by": stage_hits,
+                        "skill": best_skill["name"],
+                        "category": best_skill["category"],
+                        "path": best_skill["path"],
+                        "description": best_skill["description"][:120] + "..."
+                    })
 
     elapsed_ms = (time.time() - start_time) * 1000
 

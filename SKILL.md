@@ -97,11 +97,24 @@ If no installed skill matches the user's intent:
 4. If user declines, proceed with best-effort using general knowledge.
 
 ### Step 6: Multi-Skill Chaining & DAG Pipeline (Advanced)
-Some tasks require multiple skills. Decompose the task into an ordered DAG:
-Follow the detailed specification in [`references/pipeline-orchestration.md`](./references/pipeline-orchestration.md).
+Some tasks require multiple skills. Decompose the task into an ordered DAG across two major categories:
+
+1. **Type A: Application Tech Stack Pipeline**
+   - For fullstack software engineering tasks (*"Next.js app with Supabase and Jest tests"*):
+   - Architecture ➔ Backend/Auth ➔ UI Design ➔ Testing ➔ Deployment
+   - Output: `> 🧭 [Skill Router] ➔ Pipeline Activated: frontend-design ➔ nextjs-supabase-auth ➔ test-driven-development ➔ vercel-deployment`
+
+2. **Type B: Autonomous Meta-Workflow Pipeline (Plan ➔ Goal ➔ Execute ➔ Verify)**
+   - For indirect, multi-step autonomous agent tasks (*"Pehle plan banao, phir goal fix karo, phir execute karo, phir verify karo"* or *"Bhai poora kaam end-to-end sambhal lo tumhe pata hi hai"*):
+   - **Phase 1 (Planning)**: `concise-planning` or `writing-plans`
+   - **Phase 2 (Goal Loop & Autonomy Scope)**: `goal-loop`
+   - **Phase 3 (Phased Execution)**: `executing-plans` (or `subagent-driven-development`)
+   - **Phase 4 (Ground-Truth Verification)**: `verification-before-completion` or `dos-verify-done-claims`
+   - Output: `> 🧭 [Skill Router] ➔ Autonomous Workflow Pipeline: concise-planning ➔ goal-loop ➔ executing-plans ➔ verification-before-completion`
+
 Automated pipeline planner:
 ```bash
-py scripts/route_pipeline.py "<compound user request>"
+py scripts/route_pipeline.py "<compound or workflow user request>"
 ```
 
 ### Step 7: Dynamic Angle Shifts & Multi-Turn Adaptation (Pivot Handling)
