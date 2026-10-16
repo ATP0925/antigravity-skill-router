@@ -36,6 +36,11 @@ When a user sends any message:
 1. Extract the **primary task** (e.g., "create a PR", "debug Python error", "write tests", "deploy to AWS").
 2. Identify **domain keywords** (e.g., "React", "Docker", "SEO", "database", "security").
 3. Detect **action type**: build, debug, review, deploy, research, automate, design, test, document, etc.
+4. **Skill Necessity Gate (Bypass Check)**: If the prompt is a greeting ("hi", "hello"), casual conversation, simple logic/math, or a general question where standard reasoning is sufficient and no specific skill workflow or tool is needed:
+   - **Bypass routing completely.**
+   - Do **NOT** activate any skill.
+   - Do **NOT** show any skill badges in chat.
+   - Answer directly and naturally with zero latency or token overhead.
 
 ### Step 2: Discover Available Skills
 Scan the following locations for installed skills:
@@ -145,6 +150,7 @@ User sends a message
 5. **Don't overload the user.** If the match is clear (>90% confidence), just activate, show the badge, and go. Don't list 10 possible skills.
 6. **Workspace skills override global skills.** If both have a skill with the same name, prefer the workspace version.
 7. **Chain wisely.** Only chain multiple skills if the task genuinely spans domains. Don't chain for simple requests.
+8. **Zero Overhead for General Queries.** If no specialist skill is needed (greetings, simple explanations, general chat), do not force a skill or badge. Respond directly and cleanly.
 
 ---
 
@@ -165,6 +171,10 @@ User sends a message
 ### Scenario D: Multi-Skill Task
 **User:** "Next.js app banao with Supabase auth, SEO optimize karo, aur Vercel pe deploy karo"
 **Router Action:** Output `> 🧭 **[Skill Router]** ➔ Pipeline Activated: nextjs-best-practices ➔ nextjs-supabase-auth ➔ seo-audit ➔ vercel-deployment` → Execute in order.
+
+### Scenario E: General Conversation (Bypass)
+**User:** "Hi, kaise ho? JavaScript mein const aur let mein kya antar hai?"
+**Router Action:** General knowledge / basic conceptual explanation → **Bypass skill activation completely** → No badge → Answer directly and cleanly.
 
 ---
 
