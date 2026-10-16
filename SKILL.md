@@ -175,6 +175,24 @@ If a skill is incorrectly selected or the user informs the agent that the wrong 
    - Remember the correction for the remainder of the conversation. Never repeat the wrong skill recommendation in this session.
    - Suggest `/learn` if the user wants this project preference saved permanently.
 
+### Step 10: Fault Tolerance, Error Recovery & Graceful Degradation (Fail-Safe Resilience)
+If any technical error, missing file, or script crash occurs during the routing process:
+
+1. **Never-Crash Principle (Zero Session Disruption)**:
+   - If `skills-index.json` is missing/corrupted, or a script throws an unhandled exception:
+   - The agent MUST **NEVER** abort the conversation or output a raw stack trace to the user.
+   - It gracefully falls back to the Antigravity core LLM intelligence to answer the question directly.
+2. **Transparent Fallback Notice**:
+   - Inform the user gently:
+     ```markdown
+     > ⚠️ **[Skill Router]** ➔ Routing engine encountered a minor issue. Falling back to Core Reasoning Mode to complete your task.
+     ```
+3. **Execution Script Error Auto-Diagnosis**:
+   - If a script inside a routed skill fails during terminal execution (e.g., non-zero exit code, missing dependency):
+   - Immediately invoke `systematic-debugging` or `debugger` to inspect the error log, explain the cause in plain Hindi/English, and offer the specific fix.
+4. **Circuit Breaker (Anti-Infinite Loop)**:
+   - If any command or skill fails twice consecutively, stop automatic retries. Present the exact error to the user with 2 actionable choices to proceed.
+
 ---
 
 ## Decision Flowchart
@@ -224,6 +242,7 @@ User sends a message
 8. **Zero Overhead for General Queries.** If no specialist skill is needed (greetings, simple explanations, general chat), do not force a skill or badge. Respond directly and cleanly.
 9. **Childlike / Double-Meaning Safety Gate.** If a user's prompt is naive, playful, or has divergent meanings (*"uda do"*, *"magic karo"*), NEVER assume a destructive path. Ask a simple, jargon-free clarifying question with 2 clear choices.
 10. **Zero-Resistance Misroute Rollback.** If a skill was wrongly activated, never defend it or argue. Deactivate immediately, apologize briefly, hot-swap to the user's intended skill, and remember the preference for the entire session.
+11. **Graceful Fallback & Never-Crash.** If a skill file is missing, corrupted, or encounters an internal runtime error, NEVER crash or abort the conversation. Fall back to core model reasoning gracefully and continue solving the user's task.
 
 ---
 
@@ -256,6 +275,10 @@ User sends a message
 ### Scenario G: Misroute Correction & Instant Hot-Swap
 **User:** "Wait, tune Flutter skill kyu laga di? Main React Native use kar raha hu!"
 **Router Action:** Instant Correction → Output: `> 🧭 **[Skill Router]** ➔ Correction Applied: Deactivated flutter-expert ➔ Activated react-native-architecture` → Purge Flutter context → Follow React Native patterns → Remember preference for session.
+
+### Scenario H: Error Encountered / Fallback Resilience
+**User:** "Deep research karo quantum biology par"
+**Router Action:** If external API or skill script fails with error → Output: `> ⚠️ **[Skill Router]** ➔ Router notice: Deep search tool unavailable. Falling back to Core Reasoning mode.` → Answer thoroughly using model knowledge without breaking the conversation.
 
 ---
 
