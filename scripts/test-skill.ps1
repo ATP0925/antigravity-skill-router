@@ -167,6 +167,26 @@ $lintOut = & py $lintScript $skillRoot | Out-String
 $scorePass = $lintOut -match "Score:\s*100/100"
 Assert-Test -Category "Linter" -Name "skill-router passes self-audit with 100/100 Quality Score" -Condition $scorePass
 
+# --- Section 9: Universal Multi-IDE & Cross-Platform Tests ---
+Write-Host ""
+Write-Host "9. Universal Multi-IDE & Cross-Platform Checks" -ForegroundColor Yellow
+
+$shScript = Join-Path $scriptDir "skill-hub.sh"
+$shExists = Test-Path $shScript
+Assert-Test -Category "Platform" -Name "Unix/macOS wrapper scripts/skill-hub.sh exists" -Condition $shExists
+
+$ideDoc = Join-Path $skillRoot "references\ide-integrations.md"
+$ideDocExists = (Test-Path $ideDoc) -and ((Get-Item $ideDoc).Length -gt 1000)
+Assert-Test -Category "IDE" -Name "Comprehensive ide-integrations.md guide exists (>1KB)" -Condition $ideDocExists
+
+$envOut = & py $hubScript env | Out-String
+$envPass = $envOut -match "Universal AI Skill Router" -and $envOut -match "Universal Compatibility Status: 100% READY"
+Assert-Test -Category "Universal" -Name "skill_hub.py env verifies multi-IDE discovery & readiness" -Condition $envPass
+
+$agentsDoc = Join-Path $skillRoot "AGENTS.md"
+$agentsDocExists = Test-Path $agentsDoc
+Assert-Test -Category "Universal" -Name "Standard root AGENTS.md instructions present" -Condition $agentsDocExists
+
 # --- Summary ---
 Write-Host ""
 Write-Host "==========================================================" -ForegroundColor Cyan
@@ -178,3 +198,4 @@ if ($testsPassed -eq $totalTests) {
 } else {
     Write-Host "Status: Some tests failed ($($totalTests - $testsPassed) failed). Review log details above." -ForegroundColor Red
 }
+

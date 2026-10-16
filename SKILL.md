@@ -43,18 +43,31 @@ When a user sends any message:
    - Answer directly and naturally with zero latency or token overhead.
 
 ### Step 2: Discover Available Skills
-Scan the following locations for installed skills:
+Scan the following locations across your active IDE or agent tool:
 
 ```text
-Discovery Priority (highest → lowest):
-1. Workspace skills:   .agents/skills/*/SKILL.md
-2. Global skills:      ~/.gemini/config/skills/*/SKILL.md
-3. Plugin skills:      ~/.gemini/config/plugins/*/skills/*/SKILL.md
-4. Built-in skills:    (already loaded in system context)
+Universal Multi-IDE Discovery Hierarchy (highest → lowest):
+1. Workspace skills:
+   - Universal Agent standard: .agents/skills/*/SKILL.md
+   - Claude Code:              .claude/skills/*/SKILL.md
+   - Cursor AI:                .cursor/skills/*/SKILL.md
+   - Windsurf / Codeium:       .windsurf/skills/*/SKILL.md
+   - Antigravity / Gemini:     .gemini/skills/*/SKILL.md
+   - VS Code / Local:          .vscode/skills/*/SKILL.md or skills/*/SKILL.md
+2. Global AI user configs:
+   - Google Antigravity IDE:   ~/.gemini/config/skills/*/SKILL.md
+   - Anthropic Claude Code:    ~/.claude/skills/*/SKILL.md & ~/.config/claude/skills/
+   - OpenAI Codex:             ~/.codex/skills/*/SKILL.md
+   - Cursor / Windsurf:        ~/.cursor/skills/ & ~/.windsurf/skills/
+   - Universal Global:         ~/.agents/skills/*/SKILL.md
+3. Global Plugin bundles:      ~/.gemini/config/plugins/*/skills/*/SKILL.md
+4. Custom Environment paths:   $SKILLS_PATH (colon/semicolon separated)
+5. Built-in skills:            (host system context)
 ```
 
-> **Fast Lookup Engine**: For sub-50ms instant lookup across all 2,200+ skills, run:
-> `py scripts/query-index.py "<user query>"`
+> **Universal Compatibility**: Skill Router runs identically in Antigravity, Claude Code, Cursor, Windsurf, VS Code (Copilot/Cline/Roo), JetBrains, Neovim, and shell terminals. See [`references/ide-integrations.md`](./references/ide-integrations.md) for one-click setup.
+> **Fast Lookup Engine**: For sub-50ms instant lookup across all skills, run:
+> `py scripts/query-index.py "<user query>"` or `./scripts/skill-hub.sh route "<query>"`
 
 ### Step 3: Match & Rank Skills
 Score each skill against the user's intent using these criteria:

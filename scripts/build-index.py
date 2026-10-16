@@ -125,15 +125,56 @@ def parse_skill_md(file_path: Path, scope: str) -> dict | None:
         "has_references": (file_path.parent / "references").exists(),
     }
 
+def get_universal_scan_targets():
+    home = Path(os.path.expanduser("~"))
+    cwd = Path.cwd()
+
+    targets = [
+        # 1. Standard Workspace folders (Multi-IDE: Antigravity, Claude Code, Cursor, Windsurf, VS Code)
+        (cwd / ".agents" / "skills", "workspace", 2),
+        (cwd / ".claude" / "skills", "workspace-claude", 2),
+        (cwd / ".cursor" / "skills", "workspace-cursor", 2),
+        (cwd / ".windsurf" / "skills", "workspace-windsurf", 2),
+        (cwd / ".gemini" / "skills", "workspace-gemini", 2),
+        (cwd / ".vscode" / "skills", "workspace-vscode", 2),
+        (cwd / "skills", "workspace-local", 2),
+        (DEFAULT_WORKSPACE, "workspace", 2),
+
+        # 2. Global AI tool / IDE user configurations
+        (home / ".gemini" / "config" / "skills", "global", 2),
+        (home / ".gemini" / "config" / "plugins", "plugins", 5),
+        (home / ".claude" / "skills", "global-claude", 2),
+        (home / ".config" / "claude" / "skills", "global-claude", 2),
+        (home / ".codex" / "skills", "global-codex", 2),
+        (home / ".cursor" / "skills", "global-cursor", 2),
+        (home / ".windsurf" / "skills", "global-windsurf", 2),
+        (home / ".agents" / "skills", "global-agents", 2),
+    ]
+
+    # 3. Environment variable for custom paths: SKILLS_PATH or AGENT_SKILLS_PATH
+    env_paths = os.environ.get("SKILLS_PATH", "") or os.environ.get("AGENT_SKILLS_PATH", "")
+    if env_paths:
+        sep = ";" if os.name == "nt" else ":"
+        for p in env_paths.split(sep):
+            cp = p.strip()
+            if cp:
+                targets.append((Path(cp), "env-custom", 3))
+
+    # Deduplicate and return existing directories only
+    unique = []
+    seen = set()
+    for base_path, scope, max_depth in targets:
+        if base_path.exists() and base_path.is_dir():
+            resolved = base_path.resolve()
+            if resolved not in seen:
+                seen.add(resolved)
+                unique.append((base_path, scope, max_depth))
+    return unique
+
 def build_index():
     start_time = time.time()
-    print(f"Scanning skills across workspace, global config, and plugins...")
-
-    scan_targets = [
-        (WORKSPACE_SKILLS, "workspace", 2),
-        (GLOBAL_CONFIG / "skills", "global", 2),
-        (GLOBAL_CONFIG / "plugins", "plugins", 5),
-    ]
+    scan_targets = get_universal_scan_targets()
+    print(f"Scanning skills across {len(scan_targets)} active IDE/agent roots...")
 
     skills_dict = {}  # name -> skill_data (workspace overrides global)
     seen_paths = set()
@@ -160,7 +201,7 @@ def build_index():
                 if skill_data:
                     name = skill_data["name"]
                     # Workspace priority: workspace always overwrites global/plugin
-                    if name not in skills_dict or scope == "workspace":
+                    if name not in skills_dict or scope.startswith("workspace"):
                         skills_dict[name] = skill_data
 
     skills_list = list(skills_dict.values())
