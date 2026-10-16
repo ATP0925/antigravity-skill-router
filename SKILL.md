@@ -143,6 +143,25 @@ When a user has a childlike, naive, playful, or non-technical mindset, their wor
 4. **Creative Sandbox Default**:
    - If the request is imaginative and safe, default to an interactive visual prototype or creative demonstration rather than freezing.
 
+### Step 9: Wrong Skill Correction, Instant Rollback & Anti-Stubbornness (Misroute Recovery)
+If a skill is incorrectly selected or the user informs the agent that the wrong skill was applied:
+
+1. **Zero-Argument Instant Acknowledgment**:
+   - If the user says (*"Galat skill lagayi"*, *"Wait, not this"*, *"Use X instead"*, *"Stop"*):
+   - **NEVER** argue, defend the wrong choice, or try to justify why the skill was chosen.
+   - Instantly acknowledge and display the correction badge:
+     ```markdown
+     > 🧭 **[Skill Router]** ➔ Correction Applied: Deactivated `[wrong-skill]` ➔ Activated `[correct-skill]`
+     ```
+2. **Context Purge & Instructions Swap**:
+   - Immediately purge the rules of the wrong skill from active context.
+   - Read and load the correct skill's `SKILL.md` file.
+3. **File State Reversion Check**:
+   - If the wrong skill introduced inappropriate code or files, ask or proactively revert using git or clean file overwrite.
+4. **Session Learning (Negative Preference Tracking)**:
+   - Remember the correction for the remainder of the conversation. Never repeat the wrong skill recommendation in this session.
+   - Suggest `/learn` if the user wants this project preference saved permanently.
+
 ---
 
 ## Decision Flowchart
@@ -191,6 +210,7 @@ User sends a message
 7. **Chain wisely.** Only chain multiple skills if the task genuinely spans domains. Don't chain for simple requests.
 8. **Zero Overhead for General Queries.** If no specialist skill is needed (greetings, simple explanations, general chat), do not force a skill or badge. Respond directly and cleanly.
 9. **Childlike / Double-Meaning Safety Gate.** If a user's prompt is naive, playful, or has divergent meanings (*"uda do"*, *"magic karo"*), NEVER assume a destructive path. Ask a simple, jargon-free clarifying question with 2 clear choices.
+10. **Zero-Resistance Misroute Rollback.** If a skill was wrongly activated, never defend it or argue. Deactivate immediately, apologize briefly, hot-swap to the user's intended skill, and remember the preference for the entire session.
 
 ---
 
@@ -219,6 +239,10 @@ User sends a message
 ### Scenario F: Childlike / Divergent Meanings (Safety & Clarify)
 **User:** "Is button ko dabane par screen par bomb phatna chahiye aur sab udd jana chahiye!"
 **Router Action:** Multiple meanings detected (destructive crash vs playful confetti/particle effect) → Output: `> 🧭 [Skill Router] ➔ Playful effect detected. Activating design-spells for visual particle animation (Safe Sandbox).`
+
+### Scenario G: Misroute Correction & Instant Hot-Swap
+**User:** "Wait, tune Flutter skill kyu laga di? Main React Native use kar raha hu!"
+**Router Action:** Instant Correction → Output: `> 🧭 **[Skill Router]** ➔ Correction Applied: Deactivated flutter-expert ➔ Activated react-native-architecture` → Purge Flutter context → Follow React Native patterns → Remember preference for session.
 
 ---
 
