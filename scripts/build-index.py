@@ -30,10 +30,16 @@ STOP_WORDS = {
     "once", "here", "there", "all", "any", "both", "each", "few", "more",
     "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same",
     "so", "than", "too", "very", "can", "will", "just", "should", "now",
-    # Hindi/Hinglish stop words
+    # Hindi/Hinglish stop words and common conversation fillers
     "karo", "karna", "karein", "hai", "hain", "mera", "meri", "mere", "kaise",
     "aur", "ko", "ke", "ki", "ka", "se", "banao", "likho", "batao", "chahiye",
-    "yeh", "woh", "isme", "usme", "mai", "mein", "par", "pe"
+    "yeh", "woh", "isme", "usme", "mai", "mein", "par", "pe", "kar", "raha", "rahi",
+    "rahe", "hoga", "hogi", "bhi", "toh", "to", "kuch", "mujhe", "humko", "aap",
+    "tum", "tu", "bhai", "yaar", "sir", "please", "plz", "chal", "nahi", "na", "theek",
+    "wala", "wali", "wale", "kardo", "kardiya", "dekh", "liye", "gaya", "gayi",
+    "kisi", "tarah", "aagar", "agar", "fir", "phir", "but", "also", "eisme", "isme",
+    "kya", "kyu", "kyun", "kab", "kisko", "kaha", "kahin", "me", "kare", "karega",
+    "karegi", "karenge", "apna", "apne", "apni", "de", "do", "dena", "diya"
 }
 
 CATEGORY_MAP = {

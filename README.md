@@ -3,7 +3,7 @@
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Skills Indexed](https://img.shields.io/badge/Skills%20Indexed-2%2C250%2B-blue.svg)](data/skills-index.json)
 [![Latency](https://img.shields.io/badge/Search%20Latency-%3C%2050ms-brightgreen.svg)](#-benchmarks)
-[![Tests Passing](https://img.shields.io/badge/Tests-24%2F24%20Passing-success.svg)](#-automated-verification-suite)
+[![Tests Passing](https://img.shields.io/badge/Tests-34%2F34%20Passing-success.svg)](#-automated-verification-suite)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-blueviolet.svg)](#-installation)
 [![Antigravity](https://img.shields.io/badge/Ecosystem-Google%20Antigravity%20IDE-orange.svg)](https://deepmind.google)
 
@@ -19,8 +19,10 @@ Modern agent workspaces often contain dozens of specialized skills (frontend, ba
 
 **Skill Router solves this completely:**
 - 🔍 **Zero-Friction Discovery**: Matches intent against 2,250+ skills in **~30ms** using a pre-computed inverted index.
+- 🗣️ **Hinglish & Natural Language Bridge**: Native support for colloquial Hinglish/Hindi phrasing (*"code phat gaya"*, *"website banana hai"*, *"git pe daal do"*).
 - 🎯 **Auto-Activation**: Reads skill frontmatter, matches triggers, and silently loads the best skill without user intervention.
-- ⛓️ **Multi-Skill DAG Pipelines**: Decomposes complex compound tasks (e.g., *"Build fullstack Next.js app with Supabase Auth and Jest tests"*) into a 5-phase execution DAG.
+- ⛓️ **Multi-Skill DAG Pipelines**: Decomposes complex compound tasks or autonomous loops (*Plan ➔ Goal ➔ Execute ➔ Verify*) into an ordered DAG.
+- 🔄 **Self-Healing & Auto-Staleness Watcher**: Automatically rebuilds index if cache is missing or older than 24 hours.
 - 🚨 **Gap Detection & Self-Scaffolding**: Detects when a required capability is missing, notifies the user, and automatically scaffolds a compliant new skill with a 100/100 quality score.
 - 🛡️ **Built-in Quality Linter**: Audits skills against naming conventions, YAML spec, documentation standards, and script validity.
 
@@ -38,10 +40,12 @@ graph TD
     Decision -->|Strong Single Match >= 35| AutoAct[Silently Load SKILL.md & Execute Instructions]
     Decision -->|Multiple Close Matches| Interactive[Present Top 3 Ranked Choices to User]
     Decision -->|Compound Complex Request| Pipeline[Decompose into 5-Phase DAG Execution Plan]
+    Decision -->|Autonomous Workflow| MetaDAG[Plan ➔ Goal ➔ Execute ➔ Verify DAG]
     Decision -->|No Match / Gap Detected| Gap[Notify User & Offer Auto-Scaffold / Install]
     
     Interactive --> AutoAct
     Pipeline --> AutoAct
+    MetaDAG --> AutoAct
     Gap --> Scaffold[Scaffold New Compliant Skill]
     Scaffold --> AutoAct
 ```
@@ -69,7 +73,7 @@ antigravity-skill-router/
     ├── build-index.py               # Rebuilds the 2,250+ skill index cache
     ├── route-skill.ps1              # PowerShell fast skill query wrapper
     ├── route-pipeline.ps1           # PowerShell pipeline wrapper
-    └── test-skill.ps1               # 24-point automated test & benchmark suite
+    └── test-skill.ps1               # 34-point automated test & benchmark suite
 ```
 
 ---
@@ -104,7 +108,17 @@ Once installed, restart your IDE session or start a new conversation. Antigravit
 
 A unified cross-platform CLI tool (`skill-hub.ps1` for Windows / `skill_hub.py` for Python/Linux/macOS) is included for manual operations, benchmarks, and maintenance:
 
-### 1. Intent Route Search (< 50ms)
+### 1. System Status Dashboard
+Check health, cache age, scope distribution, and live latency ping:
+```bash
+# Universal Python
+python scripts/skill_hub.py status
+
+# Windows PowerShell
+powershell -ExecutionPolicy Bypass -File scripts/skill-hub.ps1 status
+```
+
+### 2. Intent Route Search (< 50ms)
 Find the best matching skill for any intent or error message:
 ```bash
 # PowerShell
@@ -114,44 +128,49 @@ powershell -ExecutionPolicy Bypass -File scripts/skill-hub.ps1 route "Docker con
 python scripts/skill_hub.py route "PostgreSQL query slow chal rahi hai index optimization"
 ```
 
-### 2. Multi-Skill DAG Pipeline Planning
+### 3. Deep Explain Diagnostic Mode
+Inspect exact match signals, token weights, and decision reasoning:
+```bash
+python scripts/skill_hub.py explain "Docker container crash"
+```
+
+### 4. Filter Skills by Domain or Scope
+```bash
+python scripts/skill_hub.py list frontend
+python scripts/skill_hub.py list security
+python scripts/skill_hub.py list global
+```
+
+### 5. Multi-Skill DAG Pipeline Planning
 Decompose complex compound tasks into a sequenced multi-skill pipeline:
 ```bash
-# PowerShell
-powershell -ExecutionPolicy Bypass -File scripts/skill-hub.ps1 pipeline "Next.js 15 app with Supabase Auth and Jest E2E tests"
+# Tech stack pipeline
+python scripts/skill_hub.py pipeline "Next.js 15 app with Supabase Auth and Jest E2E tests"
 
-# Python / Universal
-python scripts/skill_hub.py pipeline "FastAPI backend with PostgreSQL, Redis cache and Docker deploy"
+# Autonomous meta-workflow loop
+python scripts/skill_hub.py pipeline "pehle plan karo fir goal fix karo fir execute and verify karo"
 ```
 
-### 3. Automated Skill Scaffolding
+### 6. Automated Skill Scaffolding
 Create a brand new, spec-compliant skill with template files, scripts, and references:
 ```bash
-# PowerShell
-powershell -ExecutionPolicy Bypass -File scripts/skill-hub.ps1 scaffold -Name "cloud-deployer" -Description "Automates AWS and GCP container deployments"
-
-# Python / Universal
-python scripts/skill_hub.py scaffold --name "cloud-deployer" --description "Automates AWS and GCP container deployments"
+python scripts/skill_hub.py scaffold -n "cloud-deployer" -d "Automates AWS and GCP container deployments"
 ```
 
-### 4. Spec & Quality Linter (Audit)
+### 7. Spec & Quality Linter (Audit)
 Lint any skill or the entire skills folder to ensure 100% compliance with Antigravity standards:
 ```bash
-# PowerShell
-powershell -ExecutionPolicy Bypass -File scripts/skill-hub.ps1 lint
-
-# Python / Universal
-python scripts/skill_hub.py lint --target .
+python scripts/skill_hub.py lint
 ```
 
-### 5. Automated Verification Suite
-Run the 24-point benchmark and test suite:
+### 8. Automated Verification Suite (34/34 Tests)
+Run the 34-point benchmark and test suite:
 ```bash
 # PowerShell
-powershell -ExecutionPolicy Bypass -File scripts/skill-hub.ps1 test
+powershell -ExecutionPolicy Bypass -File scripts/test-skill.ps1
 ```
 
-### 6. Rebuild Inverted Index Cache
+### 9. Rebuild Inverted Index Cache
 Re-index your workspace and global plugins after adding new skills:
 ```bash
 python scripts/build-index.py
@@ -163,11 +182,11 @@ python scripts/build-index.py
 
 | Metric | Result | Target SLA | Status |
 | :--- | :--- | :--- | :--- |
-| **Search Latency** | **30.23 ms** | < 150 ms | 🟢 **5x Faster than SLA** |
-| **Skills Indexed** | **2,250+ Skills** | > 1,000 | 🟢 **Production Scale** |
-| **Index Token Size** | **10,741 Inverted Tokens** | > 5,000 | 🟢 **Comprehensive** |
+| **Algorithm Search Latency** | **35.20 ms** | < 150 ms | 🟢 **4x Faster than SLA** |
+| **Skills Indexed** | **2,249 Skills** | > 1,000 | 🟢 **Production Scale** |
+| **Index Token Size** | **10,735 Inverted Tokens** | > 5,000 | 🟢 **Comprehensive** |
 | **Linter Score** | **100 / 100** | >= 90 | 🟢 **Flawless Quality** |
-| **Test Suite Pass Rate** | **24 / 24 (100%)** | 100% | 🟢 **Verified** |
+| **Test Suite Pass Rate** | **34 / 34 (100%)** | 100% | 🟢 **Fully Verified** |
 
 ---
 

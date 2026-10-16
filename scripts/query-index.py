@@ -25,15 +25,61 @@ STOP_WORDS = {
     "once", "here", "there", "all", "any", "both", "each", "few", "more",
     "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same",
     "so", "than", "too", "very", "can", "will", "just", "should", "now",
-    # Hindi/Hinglish stop words
+    # Hindi/Hinglish stop words and common conversation fillers
     "karo", "karna", "karein", "hai", "hain", "mera", "meri", "mere", "kaise",
     "aur", "ko", "ke", "ki", "ka", "se", "banao", "likho", "batao", "chahiye",
-    "yeh", "woh", "isme", "usme", "mai", "mein", "par", "pe", "kar", "raha", "rahi"
+    "yeh", "woh", "isme", "usme", "mai", "mein", "par", "pe", "kar", "raha", "rahi",
+    "rahe", "hoga", "hogi", "bhi", "toh", "to", "kuch", "mujhe", "humko", "aap",
+    "tum", "tu", "bhai", "yaar", "sir", "please", "plz", "chal", "nahi", "na", "theek",
+    "wala", "wali", "wale", "kardo", "kardiya", "dekh", "liye", "gaya", "gayi",
+    "kisi", "tarah", "aagar", "agar", "fir", "phir", "but", "also", "eisme", "isme",
+    "kya", "kyu", "kyun", "kab", "kisko", "kaha", "kahin", "me", "kare", "karega",
+    "karegi", "karenge", "apna", "apne", "apni", "de", "do", "dena", "diya"
+}
+
+INTENT_SYNONYMS = {
+    # Hindi/Hinglish action & domain colloquialisms
+    "banana": ["build", "create", "scaffold"],
+    "banao": ["build", "create", "scaffold"],
+    "phat": ["crash", "error", "bug", "debug"],
+    "phata": ["crash", "error", "bug", "debug"],
+    "fat": ["crash", "error", "bug", "debug"],
+    "fata": ["crash", "error", "bug", "debug"],
+    "toot": ["broken", "error", "bug", "debug"],
+    "toota": ["broken", "error", "bug", "debug"],
+    "rok": ["stop", "pause", "kill"],
+    "roko": ["stop", "pause", "kill"],
+    "bhejo": ["push", "deploy", "commit"],
+    "bhejna": ["push", "deploy", "commit"],
+    "daal": ["push", "commit", "save", "git"],
+    "daalo": ["push", "commit", "save", "git"],
+    "chala": ["run", "test", "execute"],
+    "chalao": ["run", "test", "execute"],
+    "chalana": ["run", "test", "execute"],
+    "jodo": ["integrate", "connect", "api"],
+    "jodna": ["integrate", "connect", "api"],
+    "slow": ["performance", "speed", "profile", "latency"],
+    "hang": ["performance", "memory", "leak", "freeze"],
+    "dikkat": ["bug", "error", "debug", "issue"],
+    "gadbad": ["bug", "error", "debug", "issue"],
+    "sudhar": ["fix", "refactor", "clean", "simplify"],
+    "sudharo": ["fix", "refactor", "clean", "simplify"],
+    "safai": ["cleanup", "refactor", "clean"],
+    "samjhao": ["explain", "documentation", "guide"],
+    "suraksha": ["security", "audit", "vulnerability"],
+    "jaanch": ["test", "audit", "verify", "validate"],
+    "uda": ["delete", "remove", "clean"],
+    "hata": ["delete", "remove", "clean"],
+    "hatao": ["delete", "remove", "clean"],
+    "gandi": ["design", "ui", "ux", "frontend"],
+    "mast": ["high-end", "design", "ui", "ux"],
+    "sundar": ["design", "ui", "ux", "frontend"],
 }
 
 def clean_tokens(text: str) -> list[str]:
     words = re.findall(r'[a-zA-Z0-9_-]{2,}', text.lower())
     result = []
+    expanded = []
     for w in words:
         w_clean = w.strip('_-')
         if len(w_clean) >= 2 and w_clean not in STOP_WORDS and not w_clean.isdigit():
@@ -46,11 +92,27 @@ def clean_tokens(text: str) -> list[str]:
                 for sub in w_clean.split('_'):
                     if len(sub) >= 2 and sub not in STOP_WORDS and not sub.isdigit():
                         result.append(sub)
-    return list(dict.fromkeys(result))
+            if w_clean in INTENT_SYNONYMS:
+                expanded.extend(INTENT_SYNONYMS[w_clean])
 
-def match_skills(query: str, top_k: int = 5, json_output: bool = False):
+    combined = result + expanded
+    return list(dict.fromkeys(combined))
+
+def match_skills(query: str, top_k: int = 5, json_output: bool = False, explain: bool = False, force_reindex: bool = False):
     start_time = time.time()
+    build_script = SCRIPT_DIR / "build-index.py"
     
+    # Self-healing & staleness check: if index missing, empty, stale (>24h), or requested
+    needs_rebuild = force_reindex or not DATA_FILE.exists() or DATA_FILE.stat().st_size == 0
+    if not needs_rebuild and DATA_FILE.exists():
+        age_hours = (time.time() - DATA_FILE.stat().st_mtime) / 3600.0
+        if age_hours > 24.0:
+            needs_rebuild = True
+
+    if needs_rebuild and build_script.exists():
+        import subprocess
+        subprocess.run([sys.executable, str(build_script)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
     if not DATA_FILE.exists():
         print(f"Error: Index file not found at {DATA_FILE}. Run build-index.py first.", file=sys.stderr)
         sys.exit(1)
@@ -82,7 +144,7 @@ def match_skills(query: str, top_k: int = 5, json_output: bool = False):
 
         # Prefix / substring matches in token vocabulary for flexibility
         for vocab_token, skill_indices in inverted_index.items():
-            if len(token) >= 4 and (token in vocab_token or vocab_token in token) and token != vocab_token:
+            if len(token) >= 4 and len(vocab_token) >= 4 and (token in vocab_token or vocab_token in token) and token != vocab_token:
                 for skill_idx in skill_indices:
                     candidate_scores[skill_idx] = candidate_scores.get(skill_idx, 0) + 4
                     matched_tokens_per_skill.setdefault(skill_idx, set()).add(f"fuzzy:{token}~{vocab_token}")
@@ -91,7 +153,6 @@ def match_skills(query: str, top_k: int = 5, json_output: bool = False):
     for skill_idx, score in candidate_scores.items():
         skill = skills[skill_idx]
         skill_name = skill["name"].lower()
-        skill_desc = skill["description"].lower()
         
         # Exact or strong name match
         for token in tokens:
@@ -135,6 +196,10 @@ def match_skills(query: str, top_k: int = 5, json_output: bool = False):
 
     elapsed_ms = (time.time() - start_time) * 1000
 
+    # Compound query detection (spans multiple major categories)
+    top_categories = list(dict.fromkeys(r["category"] for r in results[:4]))
+    compound_detected = len(top_categories) >= 2 and any(c in top_categories for c in ["frontend", "backend", "database", "devops", "security", "ai_ml"])
+
     if json_output:
         out = {
             "query": query,
@@ -142,6 +207,8 @@ def match_skills(query: str, top_k: int = 5, json_output: bool = False):
             "elapsed_ms": round(elapsed_ms, 2),
             "total_matches": len(ranked_indices),
             "gap_detected": len(results) == 0 or results[0]["score"] < 10,
+            "compound_detected": compound_detected,
+            "categories_spanned": top_categories if compound_detected else [],
             "top_matches": results
         }
         print(json.dumps(out, indent=2, ensure_ascii=False))
@@ -163,19 +230,29 @@ def match_skills(query: str, top_k: int = 5, json_output: bool = False):
         print(f"Found {len(ranked_indices)} matching candidate(s). Top recommendations:\n")
         for i, res in enumerate(results, 1):
             print(f"[{i}] {res['name']} (Score: {res['score']}) [{res['scope'].upper()}] - Category: {res['category']}")
-            print(f"    Matches : {', '.join(res['matched_terms'][:5])}")
+            if explain:
+                print(f"    Match Signals: {', '.join(res['matched_terms'])}")
+            else:
+                print(f"    Matches : {', '.join(res['matched_terms'][:5])}")
             print(f"    Path    : {res['path']}")
             print(f"    Desc    : {res['description'][:130]}...")
             print()
+
+        if compound_detected:
+            print(f"💡 Multi-Domain Workflow Detected across: {', '.join(top_categories)}")
+            print(f"   Suggestion: Run 'py scripts/route_pipeline.py \"{query}\"' to generate an ordered execution DAG!\n")
+
         print(f"Action: Agent should activate option [1] ({results[0]['name']})")
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python query-index.py \"<user query>\" [--json] [--top <N>]")
+        print("Usage: python query-index.py \"<user query>\" [--json] [--top <N>] [--explain] [--reindex]")
         sys.exit(1)
 
     raw_query = sys.argv[1]
     is_json = "--json" in sys.argv
+    is_explain = "--explain" in sys.argv
+    do_reindex = "--reindex" in sys.argv
     top = 5
     if "--top" in sys.argv:
         try:
@@ -183,4 +260,5 @@ if __name__ == "__main__":
         except (ValueError, IndexError):
             pass
 
-    match_skills(raw_query, top_k=top, json_output=is_json)
+    match_skills(raw_query, top_k=top, json_output=is_json, explain=is_explain, force_reindex=do_reindex)
+

@@ -1,5 +1,5 @@
 # test-skill.ps1
-# Comprehensive 20-Point Automated Verification & Benchmark Suite for skill-router
+# Comprehensive 30-Point Automated Verification & Benchmark Suite for skill-router
 
 $scriptDir = $PSScriptRoot
 if (-not $scriptDir) { $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path }
@@ -9,6 +9,7 @@ $indexJsonPath = Join-Path $skillRoot "data\skills-index.json"
 $queryScript = Join-Path $scriptDir "query-index.py"
 $lintScript = Join-Path $scriptDir "lint_skills.py"
 $pipelineScript = Join-Path $scriptDir "route_pipeline.py"
+$hubScript = Join-Path $scriptDir "skill_hub.py"
 
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host " Running Production-Grade Verification Suite: skill-router" -ForegroundColor Cyan
@@ -43,7 +44,10 @@ if ($skillExists) {
     Assert-Test -Category "Spec" -Name "Name is lowercase-hyphenated ('skill-router')" -Condition ($content -match '\bname:\s*skill-router\b')
     Assert-Test -Category "Spec" -Name "Description contains trigger keywords" -Condition ($content -match 'description:\s*>-?')
     Assert-Test -Category "Spec" -Name "Decision flowchart documented" -Condition ($content -match 'Decision Flowchart')
-    Assert-Test -Category "Spec" -Name "Important rules and constraints documented" -Condition ($content -match 'Important Rules')
+    Assert-Test -Category "Spec" -Name "Chat badge transparency rules documented" -Condition ($content -match 'Chat Transparency Indicator')
+    Assert-Test -Category "Spec" -Name "Childlike/Naive ambiguity safety gate documented" -Condition ($content -match 'Childlike / Naive Ambiguity')
+    Assert-Test -Category "Spec" -Name "Wrong skill rollback & anti-stubbornness documented" -Condition ($content -match 'Wrong Skill Correction')
+    Assert-Test -Category "Spec" -Name "Graceful fallback & never-crash principle documented" -Condition ($content -match 'Fault Tolerance')
 }
 
 Assert-Test -Category "Spec" -Name "references/skill-catalog.md exists" -Condition (Test-Path (Join-Path $skillRoot "references\skill-catalog.md"))
@@ -69,12 +73,10 @@ if ($indexExists) {
 Write-Host ""
 Write-Host "3. Search Latency Benchmark (< 150ms SLA)" -ForegroundColor Yellow
 
-$sw = [System.Diagnostics.Stopwatch]::StartNew()
 $benchOut = & py $queryScript "Docker container crash log debug" --json | ConvertFrom-Json
-$sw.Stop()
 $latencyMs = $benchOut.elapsed_ms
 
-Assert-Test -Category "Performance" -Name "Query execution is sub-150ms ($latencyMs ms recorded)" -Condition ($latencyMs -lt 150)
+Assert-Test -Category "Performance" -Name "Algorithm latency is sub-150ms ($latencyMs ms recorded)" -Condition ($latencyMs -lt 150)
 Assert-Test -Category "Performance" -Name "JSON output structure is valid" -Condition ($benchOut.top_matches.Count -gt 0)
 
 # --- Section 4: Domain Routing Accuracy Tests ---
@@ -104,24 +106,62 @@ foreach ($dt in $domainTests) {
     Assert-Test -Category "Routing" -Name "Routes $($dt.Domain) query to '$($dt.Expected)' (Top: $topName)" -Condition $matched -Details "Query: $($dt.Query)"
 }
 
-# --- Section 5: Pipeline & DAG Decomposition ---
+# --- Section 5: Colloquial Hinglish & Intent Synonyms ---
 Write-Host ""
-Write-Host "5. Multi-Skill Pipeline Decomposition" -ForegroundColor Yellow
+Write-Host "5. Hinglish Natural Intent Expansion Tests" -ForegroundColor Yellow
+
+$hinglishTests = @(
+    @{ Query = "code phat gaya hai check karo"; Expected = "debug|error"; Intent = "Crash/Error" },
+    @{ Query = "website banana hai nextjs me"; Expected = "react|nextjs|build"; Intent = "Build/Scaffold" },
+    @{ Query = "git pe daal do"; Expected = "git"; Intent = "Push/Save" }
+)
+
+foreach ($ht in $hinglishTests) {
+    $hRes = & py $queryScript $ht.Query --json | ConvertFrom-Json
+    $hMatched = $false
+    $hTop = if ($hRes.top_matches.Count -gt 0) { $hRes.top_matches[0].name } else { "none" }
+    foreach ($m in $hRes.top_matches) {
+        if ($m.name -match $ht.Expected) {
+            $hMatched = $true
+            break
+        }
+    }
+    Assert-Test -Category "Hinglish" -Name "Maps '$($ht.Intent)' colloquial query to '$($ht.Expected)' (Top: $hTop)" -Condition $hMatched -Details "Query: $($ht.Query)"
+}
+
+# --- Section 6: Pipeline & DAG Decomposition ---
+Write-Host ""
+Write-Host "6. Multi-Skill Pipeline & Meta-Workflow DAG" -ForegroundColor Yellow
 
 $pipeOut = & py $pipelineScript "Fullstack Next.js app with Supabase database, Tailwind styling, Jest testing, and Docker CI deployment" | Out-String
 $hasPhases = $pipeOut -match "Execution Graph \(DAG\)" -and $pipeOut -match "Phase 1:" -and $pipeOut -match "Phase 5:"
-Assert-Test -Category "Pipeline" -Name "Successfully breaks compound task into 5-phase DAG" -Condition $hasPhases
+Assert-Test -Category "Pipeline" -Name "Breaks compound tech stack into 5-phase DAG" -Condition $hasPhases
 
-# --- Section 6: Gap Detection & Install Offer ---
+$metaOut = & py $pipelineScript "pehle plan karo fir goal fix karo fir execute and verify karo" | Out-String
+$hasMetaPhases = $metaOut -match "Task Planning" -and $metaOut -match "Goal Loop" -and $metaOut -match "Phased Execution" -and $metaOut -match "Ground-Truth Verification"
+Assert-Test -Category "Pipeline" -Name "Breaks autonomous meta-intent into Plan->Goal->Execute->Verify DAG" -Condition $hasMetaPhases
+
+# --- Section 7: Compound Query Detection & CLI Hub ---
 Write-Host ""
-Write-Host "6. Gap Detection on Novel Topics" -ForegroundColor Yellow
+Write-Host "7. Compound Detection & CLI Hub Commands" -ForegroundColor Yellow
+
+$compoundOut = & py $queryScript "Next.js frontend with Supabase backend and Jest testing" --json | ConvertFrom-Json
+Assert-Test -Category "Compound" -Name "Correctly flags compound_detected=true for multi-domain prompt" -Condition ($compoundOut.compound_detected -eq $true)
 
 $gapOut = & py $queryScript "foobarbaz123456789 unknownthing999" --json | ConvertFrom-Json
-Assert-Test -Category "Gap" -Name "Correctly flags gap_detected=true for unknown request" -Condition ($gapOut.gap_detected -eq $true)
+Assert-Test -Category "Gap" -Name "Flags gap_detected=true for unknown request" -Condition ($gapOut.gap_detected -eq $true)
 
-# --- Section 7: Linter & Quality Audit ---
+$statusOut = & py $hubScript status | Out-String
+$statusPass = $statusOut -match "OPERATIONAL" -and $statusOut -match "Total Skills Indexed"
+Assert-Test -Category "CLI" -Name "skill_hub.py status outputs operational dashboard" -Condition $statusPass
+
+$explainOut = & py $hubScript explain "Docker container crash" | Out-String
+$explainPass = $explainOut -match "Match Signals:" -and $explainOut -match "Top recommendations"
+Assert-Test -Category "CLI" -Name "skill_hub.py explain outputs detailed signal weights" -Condition $explainPass
+
+# --- Section 8: Linter & Quality Audit ---
 Write-Host ""
-Write-Host "7. Skill Linter Self-Audit" -ForegroundColor Yellow
+Write-Host "8. Skill Linter Self-Audit" -ForegroundColor Yellow
 
 $lintOut = & py $lintScript $skillRoot | Out-String
 $scorePass = $lintOut -match "Score:\s*100/100"
@@ -134,7 +174,7 @@ Write-Host " Benchmark Results: $testsPassed / $totalTests Tests Passed" -Foregr
 Write-Host "==========================================================" -ForegroundColor Cyan
 
 if ($testsPassed -eq $totalTests) {
-    Write-Host "Status: ALL 20 CHECKS PASSED - Skill Router is at Final Production Potential!" -ForegroundColor Green
+    Write-Host "Status: ALL $totalTests CHECKS PASSED - Skill Router is 100% Operational & Production-Ready!" -ForegroundColor Green
 } else {
-    Write-Host "Status: Some tests failed. Review log details above." -ForegroundColor Red
+    Write-Host "Status: Some tests failed ($($totalTests - $testsPassed) failed). Review log details above." -ForegroundColor Red
 }
