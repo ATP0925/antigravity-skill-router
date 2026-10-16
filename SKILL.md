@@ -128,6 +128,21 @@ Real-world conversations are non-linear. The user may shift angles, speak inform
    - If the user explicitly redirects (*"Nahi, mujhe Docker nahi, Kubernetes chahiye"*):
    - Immediately yield to the user's preference with zero resistance and activate the requested skill.
 
+### Step 8: Childlike / Naive Ambiguity & Multi-Interpretation Safety Gate
+When a user has a childlike, naive, playful, or non-technical mindset, their words often have multiple, completely different meanings (*"isko uda do"*, *"magic karo"*, *"bomb phatna chahiye"*, *"game jaisa kuch banao"*):
+
+1. **Anti-Assumption on Divergent Meanings**:
+   - When a phrase maps to two completely opposite domains (e.g., Delete File vs Deploy to Cloud, or Particle Animation vs Error Crash), **NEVER blindly guess or run any destructive action.**
+2. **Jargon-Free Friendly Clarification**:
+   - Translate the technical ambiguity into simple, everyday, kid-friendly choices:
+     > 🧭 **[Skill Router]** ➔ Thoda clarify kar dijiye (Aap inme se kya chahte hain?):
+     > 1. **Option A**: Screen par fun animation / visual effect dikhana (`design-spells`)
+     > 2. **Option B**: Asli playable web game banana (`2d-games`)
+3. **Poka-Yoke Destructive Protection**:
+   - If playful or slang words could imply deletion (*"sab khatam kar do"*, *"hata do"*), always require an explicit confirmation before touching files or databases.
+4. **Creative Sandbox Default**:
+   - If the request is imaginative and safe, default to an interactive visual prototype or creative demonstration rather than freezing.
+
 ---
 
 ## Decision Flowchart
@@ -175,6 +190,7 @@ User sends a message
 6. **Workspace skills override global skills.** If both have a skill with the same name, prefer the workspace version.
 7. **Chain wisely.** Only chain multiple skills if the task genuinely spans domains. Don't chain for simple requests.
 8. **Zero Overhead for General Queries.** If no specialist skill is needed (greetings, simple explanations, general chat), do not force a skill or badge. Respond directly and cleanly.
+9. **Childlike / Double-Meaning Safety Gate.** If a user's prompt is naive, playful, or has divergent meanings (*"uda do"*, *"magic karo"*), NEVER assume a destructive path. Ask a simple, jargon-free clarifying question with 2 clear choices.
 
 ---
 
@@ -199,6 +215,10 @@ User sends a message
 ### Scenario E: General Conversation (Bypass)
 **User:** "Hi, kaise ho? JavaScript mein const aur let mein kya antar hai?"
 **Router Action:** General knowledge / basic conceptual explanation → **Bypass skill activation completely** → No badge → Answer directly and cleanly.
+
+### Scenario F: Childlike / Divergent Meanings (Safety & Clarify)
+**User:** "Is button ko dabane par screen par bomb phatna chahiye aur sab udd jana chahiye!"
+**Router Action:** Multiple meanings detected (destructive crash vs playful confetti/particle effect) → Output: `> 🧭 [Skill Router] ➔ Playful effect detected. Activating design-spells for visual particle animation (Safe Sandbox).`
 
 ---
 
